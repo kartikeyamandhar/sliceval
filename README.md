@@ -12,7 +12,7 @@
 
 [![PyPI version](https://img.shields.io/pypi/v/sliceval.svg)](https://pypi.org/project/sliceval/)
 [![Python 3.9+](https://img.shields.io/badge/python-3.9%2B-blue.svg)](https://www.python.org/downloads/)
-[![Tests](https://img.shields.io/badge/tests-162%20passed-brightgreen.svg)]()
+[![CI](https://github.com/kartikeyamandhar/sliceval/actions/workflows/ci.yml/badge.svg)](https://github.com/kartikeyamandhar/sliceval/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
 [![sklearn compatible](https://img.shields.io/badge/sklearn-compatible-orange.svg)](https://scikit-learn.org/)
 
