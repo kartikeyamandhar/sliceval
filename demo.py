@@ -1,109 +1,89 @@
-"""sliceval demo — see it work end to end."""
+"""sliceval demo — real dataset (sklearn breast cancer)."""
 
 import numpy as np
 import pandas as pd
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.datasets import load_breast_cancer
+from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.model_selection import train_test_split
+from sklearn.metrics import f1_score
 
 from sliceval import SliceEvaluator
 
-# ─── 1. Synthetic dataset with a hidden failure mode ───
-np.random.seed(42)
-n = 2000
-
-sensor_type = np.random.choice(['A', 'B'], size=n, p=[0.85, 0.15])
-hour = np.random.randint(0, 24, size=n)
-temperature = np.random.normal(65, 15, size=n)
-vibration = np.random.normal(50, 10, size=n)
-
-# Ground truth: failure depends on sensor type and hour
-# Type A: predictable failures (high temp + high vibration)
-# Type B at night: chaotic — model will struggle here
-failure = np.zeros(n, dtype=int)
-for i in range(n):
-    if sensor_type[i] == 'A':
-        if temperature[i] > 80 and vibration[i] > 60:
-            failure[i] = 1
-    else:
-        if hour[i] < 6:
-            # Night shift type B: noisy labels, hard to learn
-            failure[i] = int(np.random.random() > 0.4)
-        elif temperature[i] > 75:
-            failure[i] = 1
-
-X = pd.DataFrame({
-    'sensor_type': sensor_type,
-    'hour': hour,
-    'temperature': temperature,
-    'vibration': vibration,
-})
-y = pd.Series(failure, name='failure')
+# ─── 1. Load real data ───
+data = load_breast_cancer()
+X = pd.DataFrame(data.data, columns=data.feature_names)
+y = pd.Series(data.target, name='malignant')
 
 X_train, X_test, y_train, y_test = train_test_split(
-    X, y, test_size=0.3, random_state=42
+    X, y, test_size=0.3, random_state=42, stratify=y
 )
 
-# ─── 2. Train a model ───
-# Encode categoricals for sklearn
-X_train_enc = pd.get_dummies(X_train, dtype=float)
-X_test_enc = pd.get_dummies(X_test, dtype=float)
+# ─── 2. Train a real model ───
+model = GradientBoostingClassifier(
+    n_estimators=100, max_depth=3, random_state=42
+)
+model.fit(X_train, y_train)
 
-model = RandomForestClassifier(n_estimators=100, random_state=42)
-model.fit(X_train_enc, y_train)
+# ─── 3. The misleading global number ───
+y_pred = model.predict(X_test)
+print("=" * 65)
+print(f"GLOBAL F1: {f1_score(y_test, y_pred):.4f}")
+print("  ^ Looks excellent. Ship it?")
+print("=" * 65)
 
-# Wrap model so it works with original DataFrame
-class WrappedModel:
-    def __init__(self, model):
-        self._model = model
-    def predict(self, X):
-        return self._model.predict(pd.get_dummies(X, dtype=float))
-    def predict_proba(self, X):
-        return self._model.predict_proba(pd.get_dummies(X, dtype=float))
-
-wrapped = WrappedModel(model)
-
-# ─── 3. Standard evaluation — the misleading number ───
-from sklearn.metrics import f1_score
-y_pred = wrapped.predict(X_test)
-print("=" * 60)
-print(f"GLOBAL F1: {f1_score(y_test, y_pred):.3f}")
-print("  ^ This is what gets reported. Looks fine.")
-print("=" * 60)
-
-# ─── 4. sliceval — the real picture ───
+# ─── 4. sliceval — what's actually happening ───
 print("\n>>> Running sliceval...\n")
 
 ev = SliceEvaluator(
-    wrapped, X_test, y_test,
+    model, X_test, y_test,
     task='binary',
-    metrics=['f1', 'precision', 'recall'],
+    metrics=['f1', 'precision', 'recall', 'auc'],
     n_bootstrap=500,
 )
 
-# Manual slices: things you suspect
-ev.add_slice('sensor_b', X_test['sensor_type'] == 'B')
-ev.add_slice('night_shift', X_test['hour'] < 6)
-ev.add_slice('sensor_b_night',
-             (X_test['sensor_type'] == 'B') & (X_test['hour'] < 6))
+# Manual slices based on domain knowledge:
+# Tumor size features
+ev.add_slice('large_radius', X_test['mean radius'] > X_test['mean radius'].quantile(0.75))
+ev.add_slice('small_radius', X_test['mean radius'] < X_test['mean radius'].quantile(0.25))
+ev.add_slice('high_concavity', X_test['mean concavity'] > X_test['mean concavity'].quantile(0.75))
+ev.add_slice('low_texture', X_test['mean texture'] < X_test['mean texture'].quantile(0.25))
 
-# Auto-discover: things you don't suspect
-ev.discover_slices(method='tree', max_depth=2, min_support=0.05, significance=1.0)
+# Borderline cases: mid-range features where the model is least certain
+ev.add_slice(
+    'borderline_radius',
+    X_test['mean radius'].between(
+        X_test['mean radius'].quantile(0.4),
+        X_test['mean radius'].quantile(0.6)
+    )
+)
+
+# Auto-discover
+ev.discover_slices(method='tree', max_depth=2, min_support=0.05,
+                   n_slices=10, significance=1.0)
 
 report = ev.evaluate()
 
 # ─── 5. Results ───
 print("─── Global Metrics ───")
 for k, v in report.global_metrics.items():
-    print(f"  {k}: {v:.3f}")
+    print(f"  {k}: {v:.4f}")
 
-print("\n─── Worst Slices (by F1) ───")
-worst = report.worst_slices(n=5, metric='f1')
+print("\n─── Worst 8 Slices (by F1) ───")
+worst = report.worst_slices(n=8, metric='f1')
 print(worst.to_string(index=False))
 
 print("\n─── Full Report ───")
 df = report.to_dataframe()
-print(df[['slice_name', 'source', 'n_samples', 'f1_value', 'f1_delta', 'f1_p_value']].to_string(index=False))
+cols = ['slice_name', 'source', 'n_samples', 'f1_value',
+        'f1_ci_lower', 'f1_ci_upper', 'f1_delta', 'f1_p_value']
+print(df[cols].to_string(index=False))
 
-print("\n" + "=" * 60)
-print("The global F1 hid these failures. sliceval surfaced them.")
-print("=" * 60)
+print("\n─── Recall Breakdown (missed diagnoses matter) ───")
+worst_recall = report.worst_slices(n=5, metric='recall')
+print(worst_recall.to_string(index=False))
+
+print("\n" + "=" * 65)
+print("In cancer diagnosis, a missed malignant case (low recall) kills.")
+print("The global metric can't show you where that's happening.")
+print("sliceval can.")
+print("=" * 65)

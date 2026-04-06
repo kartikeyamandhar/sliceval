@@ -1,0 +1,10 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.14.3, pytest-9.0.2, pluggy-1.6.0 -- /Users/kartikeyamandhar/Documents/sliceval/.venv/bin/python3.14
+cachedir: .pytest_cache
+rootdir: /Users/kartikeyamandhar/Documents/sliceval
+configfile: pyproject.toml
+collecting ... collected 107 items
+
+tests/test_stress.py::test_binary_classification[rf-breast_cancer] PASSED [  0%]
+tests/test_stress.py::test_binary_classification[rf-make_moons] PASSED   [  1%]
+tests/test_stress.py::test_binary_classification[rf-make_circles] 
