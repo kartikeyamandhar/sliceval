@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 300" font-family="monospace" font-size="13">
+  <style>
+    .bg { fill: #0d1117; }
+    .t { fill: #e0e0e0; text-anchor: middle; dominant-baseline: central; }
+    .ts { fill: #888; text-anchor: middle; dominant-baseline: central; font-size: 11; }
+    .bar { rx: 4; }
+    @keyframes reveal1 { 0%,20% { width: 0; } 40%,100% { width: 310; } }
+    @keyframes reveal2 { 0%,30% { width: 0; } 50%,100% { width: 330; } }
+    @keyframes reveal3 { 0%,40% { width: 0; } 60%,100% { width: 210; } }
+    @keyframes reveal4 { 0%,50% { width: 0; } 70%,100% { width: 140; } }
+    @keyframes fadeIn { 0%,60% { opacity: 0; } 80%,100% { opacity: 1; } }
+    @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+  </style>
+
+  <rect class="bg" width="800" height="300" rx="12"/>
+
+  <!-- Title -->
+  <text class="t" x="400" y="25" font-size="15" font-weight="bold">What your dashboard shows vs. what's happening</text>
+
+  <!-- Global bar -->
+  <text class="ts" x="90" y="65">Global F1</text>
+  <rect class="bar" x="170" y="52" height="26" fill="#51cf66" style="animation: reveal1 4s ease-out infinite;">
+    <animate attributeName="width" values="0;310" dur="4s" fill="freeze"/>
+  </rect>
+  <text class="ts" x="500" y="65" style="animation: fadeIn 4s ease-out infinite;">0.91 ✅ "Ship it"</text>
+
+  <!-- Divider -->
+  <line x1="50" y1="95" x2="750" y2="95" stroke="#333" stroke-width="1" stroke-dasharray="4"/>
+  <text class="ts" x="400" y="115" font-size="10">▼ ACTUALLY ▼</text>
+
+  <!-- Sensor A bar -->
+  <text class="ts" x="90" y="150">Sensor A</text>
+  <text class="ts" x="90" y="165" font-size="10">8,000 samples</text>
+  <rect class="bar" x="170" y="143" height="26" fill="#51cf66" style="animation: reveal2 4s ease-out 0.5s both infinite;">
+    <animate attributeName="width" values="0;330" dur="4s" begin="0.5s" fill="freeze"/>
+  </rect>
+  <text class="ts" x="520" y="156" style="animation: fadeIn 4s ease-out 0.5s both infinite;">0.96 ✅</text>
+
+  <!-- Sensor B day bar -->
+  <text class="ts" x="90" y="205">Sensor B day</text>
+  <text class="ts" x="90" y="220" font-size="10">800 samples</text>
+  <rect class="bar" x="170" y="198" height="26" fill="#ffa94d" style="animation: reveal3 4s ease-out 1s both infinite;">
+    <animate attributeName="width" values="0;210" dur="4s" begin="1s" fill="freeze"/>
+  </rect>
+  <text class="ts" x="400" y="211" style="animation: fadeIn 4s ease-out 1s both infinite;">0.61 ⚠️</text>
+
+  <!-- Sensor B night bar -->
+  <text class="ts" x="90" y="260">Sensor B night</text>
+  <text class="ts" x="90" y="275" font-size="10">200 samples</text>
+  <rect class="bar" x="170" y="253" height="26" fill="#ff6b6b" style="animation: reveal4 4s ease-out 1.5s both infinite;">
+    <animate attributeName="width" values="0;140" dur="4s" begin="1.5s" fill="freeze"/>
+  </rect>
+  <text class="ts" x="330" y="266" style="animation: fadeIn 4s ease-out 1.5s both infinite;">0.41 ❌</text>
+  <text x="350" y="266" fill="#ff6b6b" font-size="11" font-family="monospace" style="animation: blink 1.5s ease-in-out 3s infinite;">← invisible in global metric</text>
+</svg>

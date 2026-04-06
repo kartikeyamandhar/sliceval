@@ -1,344 +1,378 @@
+<div align="center">
+
+<br>
+
 # sliceval
 
-**Find where your model fails before production does.**
+### Your model's global metric is lying to you.
 
+**Slice-based evaluation for ML models. Find hidden failures. Ship with confidence.**
+
+<br>
+
+[![PyPI version](https://img.shields.io/pypi/v/sliceval.svg)](https://pypi.org/project/sliceval/)
 [![Python 3.9+](https://img.shields.io/badge/python-3.9%2B-blue.svg)](https://www.python.org/downloads/)
+[![Tests](https://img.shields.io/badge/tests-162%20passed-brightgreen.svg)]()
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
-[![Tests](https://img.shields.io/badge/tests-55%20passed-brightgreen.svg)]()
+[![sklearn compatible](https://img.shields.io/badge/sklearn-compatible-orange.svg)](https://scikit-learn.org/)
 
-
-`sliceval` breaks your test set into subgroups, measures each one,
-and tells you exactly where your model is failing — with statistical proof.
-
----
-
-## The Problem
+<br>
 
 ```
-Overall F1: 0.91 ← looks great, ship it
+Your dashboard says F1 = 0.91. You ship.
+Three months later, a production line keeps missing failures.
 
-Actually:
-  Sensor Type A (8,000 samples) — F1: 0.96  ✓
-  Sensor Type B, day shift (800) — F1: 0.61  ✗
-  Sensor Type B, night shift (200) — F1: 0.41  ✗✗✗
-
-The 200-sample night group is 2% of the aggregate.
-The global metric never moved. Production broke anyway.
+The 200-sample subgroup that matters? It was at F1 = 0.41.
+The global metric never moved.
 ```
 
-This happens by default whenever subgroups have unequal sizes and different distributions. `sliceval` makes it visible.
+<br>
+
+<img src="docs/images/pipeline.svg" alt="sliceval pipeline" width="100%">
+
+<br>
+
+[Quick Start](#-quick-start) · [The Problem](#-the-problem) · [How It Works](#-how-it-works) · [API Reference](#-full-api-reference) · [Use Cases](#-real-world-use-cases)
+
+</div>
 
 ---
 
-## Table of Contents
+<br>
 
-- [Install](#install)
-- [Quick Start](#quick-start)
-- [Output Format](#output-format)
-- [Manual Slices](#manual-slices)
-- [Automatic Discovery](#automatic-discovery)
-  - [Tree-Based Discovery](#tree-based-discovery-default)
-  - [Beam Search Discovery](#beam-search-discovery)
-  - [When to Use Which](#when-to-use-which)
-- [Supported Metrics](#supported-metrics)
-- [Confidence Intervals](#confidence-intervals)
-- [MLflow Integration](#mlflow-integration)
-- [Plotting](#plotting)
-- [Regression Tasks](#regression-tasks)
-- [Full API Reference](#full-api-reference)
-  - [SliceEvaluator](#sliceevaluator)
-  - [SliceReport](#slicereport)
-  - [Slice](#slice)
-  - [SliceMetrics](#slicemetrics)
-- [Error Handling](#error-handling)
-- [Development](#development)
-
----
-
-## Install
+## ⚡ Quick Start
 
 ```bash
-pip install sliceval                  # core (numpy, pandas, scikit-learn)
-pip install sliceval[mlflow]          # + MLflow artifact logging
-pip install sliceval[plot]            # + matplotlib charts
-pip install sliceval[all]             # everything
+pip install sliceval
 ```
-
-Requires Python 3.9+.
-
----
-
-## Quick Start
 
 ```python
 from sliceval import SliceEvaluator
 
-# Wrap your trained model + test data
+# 1. Wrap your trained model + test data
 ev = SliceEvaluator(model, X_test, y_test)
 
-# Add slices you care about
+# 2. Define slices you care about
 ev.add_slice('sensor_b', X_test['sensor_type'] == 'B')
+ev.add_slice('night_shift', lambda X: X['hour'] < 6)
 
-# Auto-discover problematic slices
+# 3. Auto-discover slices you didn't think of
 ev.discover_slices()
 
-# Evaluate everything
+# 4. Evaluate — model.predict() called once, all slices reuse cached predictions
 report = ev.evaluate()
 
-# See the worst performers
+# 5. See the truth
 print(report.worst_slices())
 ```
 
-That's it. Five lines from trained model to actionable diagnostics.
+<br>
+
+<img src="docs/images/worst_slices_output.svg" alt="worst slices output" width="100%">
+
+<br>
+
+> Every metric includes a confidence interval, sample count, delta from global, and a significance test. No ambiguity.
+
+<br>
 
 ---
 
-## Output Format
+<br>
 
-`report.worst_slices()` returns a pandas DataFrame:
+## 🔍 The Problem
 
-```
-   slice_name        n_samples  support    f1  ci_lower  ci_upper   delta  p_value  source
-   sensor_b               100     0.10  0.41      0.33      0.49   -0.50    0.003  manual
-   hour<=5 (auto)          85     0.09  0.55      0.44      0.65   -0.36    0.010  tree
-```
+Standard ML evaluation computes one number across the entire test set. That number is a weighted average where majority subgroups dominate and minority subgroups disappear.
 
-Every row includes:
+<br>
 
-| Column | Meaning |
-|---|---|
-| `n_samples` | How many test samples fall in this slice |
-| `support` | Fraction of the test set (n\_samples / total) |
-| `{metric}` | The metric value for this slice |
-| `ci_lower`, `ci_upper` | 95% confidence interval bounds |
-| `delta` | Slice metric minus global metric (negative = worse) |
-| `p_value` | Statistical significance vs. global performance |
-| `source` | `manual`, `tree`, or `beam` |
+<img src="docs/images/problem.svg" alt="global metric vs slice breakdown" width="100%">
 
-`report.to_dataframe()` gives the full matrix across all slices and all metrics, with a `[global]` row first.
+<br>
 
----
+### Why not just use accuracy / F1 / confusion matrix?
 
-## Manual Slices
-
-Define slices with boolean masks or callables:
-
-```python
-# Boolean mask (evaluated immediately)
-ev.add_slice('sensor_b', X_test['sensor_type'] == 'B')
-ev.add_slice('high_temp', X_test['temperature'] > 80)
-
-# Callable (evaluated lazily at .evaluate() time)
-ev.add_slice(
-    'night_shift',
-    lambda X: X['hour'].between(22, 23) | X['hour'].between(0, 5)
-)
-
-# Intersections — combine masks yourself
-ev.add_slice(
-    'sensor_b_night',
-    (X_test['sensor_type'] == 'B') & (X_test['hour'] < 6)
-)
-```
-
-**Safety rails:**
-
-- Slices with **0 samples** → `ValueError` at evaluation time
-- Slices with **< 30 samples** → `UserWarning` about unreliable metrics
-- **Duplicate names** → overwrites previous slice with a warning
-
----
-
-## Automatic Discovery
-
-Don't know where your model fails? Let `sliceval` find out.
-
-### Tree-Based Discovery (default)
-
-Fits a shallow decision tree that predicts **model errors**. Each leaf becomes a candidate slice — a region of feature space where the model systematically fails.
-
-```python
-ev.discover_slices(
-    method='tree',
-    max_depth=3,          # max feature conjunctions (depth 2 = A AND B)
-    min_support=0.05,     # slice must cover ≥5% of test set
-    metric='f1',          # rank slices by this metric's drop
-    n_slices=10,          # return at most 10 slices
-    significance=0.05,    # drop slices with p-value > 0.05
-)
-```
-
-Discovered slices are auto-labeled with human-readable conditions:
-
-```
-sensor_type == B AND hour <= 5.5 (auto)
-temperature > 82.3 (auto)
-```
-
-### Beam Search Discovery
-
-Enumerates feature conjunctions breadth-first. More exhaustive than tree-based discovery, but slower on wide feature spaces. This implements the SliceFinder algorithm (Chung et al. 2019).
-
-```python
-ev.discover_slices(
-    method='beam',
-    max_depth=2,
-    min_support=0.05,
-    beam_width=10,        # candidates kept at each depth
-)
-```
-
-### When to Use Which
-
-| Method | Speed | Best For |
+| What You're Using | What It Tells You | What It Hides |
 |---|---|---|
-| `tree` | Fast | Axis-aligned decision boundaries, first pass |
-| `beam` | Slower | Exhaustive search, complex feature interactions |
+| **Global F1 / Accuracy** | Average performance across all data | Which subgroups are failing |
+| **Confusion Matrix** | TP/FP/TN/FN counts overall | Where those errors concentrate |
+| **Per-class Metrics** | Performance per label | Feature-driven failure patterns |
+| **sliceval** | Performance per data subgroup with CI + significance | Nothing. That's the point. |
 
-**Default is `tree`.** Most users will never need `beam`.
+> 💡 **The confusion matrix tells you *what* the model gets wrong. sliceval tells you *where* and *why*.**
 
-Calling `discover_slices()` multiple times **appends** — it does not replace previously discovered slices.
+<br>
 
 ---
 
-## Supported Metrics
+<br>
+
+## 🔬 How It Works
+
+### Three ways to define slices
+
+<br>
+
+<img src="docs/images/three_methods.svg" alt="manual, tree, and beam discovery" width="100%">
+
+<br>
+
+### Tree Discovery — how it finds failures automatically
+
+A shallow decision tree is fit on model errors. Each leaf represents a region of feature space where the model systematically fails. The leaves become candidate slices.
+
+<br>
+
+<img src="docs/images/discovery_tree.svg" alt="tree discovery animation" width="100%">
+
+<br>
+
+> 🚀 **Tree discovery is the default.** It's fast and finds axis-aligned failure regions. Use beam search when you need exhaustive coverage and can afford the compute.
+
+<br>
+
+---
+
+<br>
+
+## 📊 Visual Output
+
+### Bar Chart with Confidence Intervals
+
+```python
+fig = report.plot(metric='f1', top_n=10)
+```
+
+<br>
+
+<img src="docs/images/bar_chart.svg" alt="bar chart with CI error bars" width="100%">
+
+<br>
+
+### Confidence Intervals on Every Slice
+
+<br>
+
+<img src="docs/images/confidence_intervals.svg" alt="confidence interval visualization" width="100%">
+
+<br>
+
+- Red = significantly worse than global (delta < -0.1)
+- Amber = somewhat worse (-0.1 ≤ delta < 0)
+- Green = at or above global
+- Dashed line = global metric baseline
+
+<br>
+
+---
+
+<br>
+
+## 🏭 Real-World Use Cases
+
+<table>
+<tr>
+<td width="50%">
+
+### 🔧 Predictive Maintenance
+Your sensor model hits F1 = 0.91 globally. But Sensor Type B on night shifts? F1 = 0.41. That production line keeps missing failures. `sliceval` finds it before deployment.
+
+### 🏥 Healthcare / Clinical AI
+A diagnostic model performs well overall — but recall drops to 0.25 for patients with large tumor radius. In cancer diagnosis, a missed malignant case kills. `sliceval` surfaces exactly where recall collapses.
+
+</td>
+<td width="50%">
+
+### 💳 Fraud Detection
+Your fraud model catches 95% of fraud globally. But for transactions over $10K from new accounts? Precision drops to 0.30 — you're blocking legitimate high-value customers. `sliceval` shows you the segment.
+
+### 🎯 Recommendation Systems
+CTR model looks great in aggregate. But for users in the 18-24 cohort with < 5 interactions? The model is essentially random. `sliceval` quantifies the cold-start problem per segment.
+
+</td>
+</tr>
+</table>
+
+<br>
+
+---
+
+<br>
+
+## 📊 Supported Metrics
 
 ### Classification
 
-| Metric | Name | Notes |
+| Metric | Key | Notes |
 |---|---|---|
-| `'f1'` | F1 Score | `average='binary'` or `'macro'` for multiclass |
-| `'precision'` | Precision | Same averaging |
-| `'recall'` | Recall | Same averaging |
-| `'accuracy'` | Accuracy | — |
-| `'auc'` | ROC AUC | Requires `model.predict_proba()` |
-| `'ece'` | Expected Calibration Error | Requires `model.predict_proba()` |
+| F1 Score | `'f1'` | `average='binary'` or `'macro'` for multiclass |
+| Precision | `'precision'` | Same averaging |
+| Recall | `'recall'` | Same averaging |
+| Accuracy | `'accuracy'` | — |
+| ROC AUC | `'auc'` | Requires `predict_proba()` |
+| Expected Calibration Error | `'ece'` | Requires `predict_proba()` |
 
 ### Regression
 
-| Metric | Name |
+| Metric | Key |
 |---|---|
-| `'rmse'` | Root Mean Squared Error |
-| `'mae'` | Mean Absolute Error |
+| Root Mean Squared Error | `'rmse'` |
+| Mean Absolute Error | `'mae'` |
 
-**Defaults:**
-- Classification: `['f1', 'precision', 'recall']`
-- Regression: `['rmse', 'mae']`
-
-Metrics that need `predict_proba` (`auc`, `ece`) will raise `ValueError` at evaluation time if the model doesn't have it. You'll know immediately, not silently.
+<br>
 
 ---
 
-## Confidence Intervals
+<br>
 
-Every metric on every slice gets a confidence interval. Two methods available:
+## 🔒 Confidence Intervals & Significance
 
-| Method | How It Works | When to Use |
+Every metric on every slice gets a confidence interval and a p-value. Two CI methods:
+
+| Method | How | When |
 |---|---|---|
-| `'bootstrap'` (default) | Resample with replacement N times, take percentiles | Always works, any metric |
-| `'wilson'` | Wilson score interval for proportions | Binary classification only; faster for precision/recall/accuracy |
+| `'bootstrap'` (default) | Resample N times, take percentiles | Always works, any metric |
+| `'wilson'` | Wilson score interval | Binary classification only, faster |
 
 ```python
 ev = SliceEvaluator(
     model, X_test, y_test,
-    ci_method='bootstrap',   # or 'wilson'
-    ci_alpha=0.05,           # 95% CI (1 - alpha)
-    n_bootstrap=1000,        # more = tighter CI, slower
+    ci_method='bootstrap',
+    ci_alpha=0.05,        # 95% CI
+    n_bootstrap=1000,
 )
 ```
 
-When `ci_method='wilson'` is set but a metric doesn't support Wilson (e.g., F1, AUC), it silently falls back to bootstrap. No warning, no error — Wilson is a preference, not a hard requirement.
+> ⚠️ **When `ci_method='wilson'` is set but a metric doesn't support it (e.g., F1), sliceval silently falls back to bootstrap. No warning, no error — Wilson is a preference, not a requirement.**
+
+<br>
 
 ---
 
-## MLflow Integration
+<br>
 
-Log slice evaluation results as MLflow artifacts in one call:
+## 📦 MLflow Integration
+
+One call. Everything logged.
+
+<br>
+
+<img src="docs/images/mlflow_integration.svg" alt="MLflow integration flow" width="100%">
+
+<br>
 
 ```python
 import mlflow
-from sliceval import SliceEvaluator
 
 with mlflow.start_run():
-    # ... your training code ...
-
-    ev = SliceEvaluator(model, X_test, y_test,
-                        metrics=['f1', 'precision', 'recall'])
-    ev.add_slice('sensor_b', X_test['sensor_type'] == 'B')
-    ev.discover_slices(method='tree', max_depth=2)
     report = ev.evaluate()
-
-    report.to_mlflow()  # uses active run automatically
+    report.to_mlflow()  # uses active run
 ```
 
-### What Gets Logged
+> 💡 Requires `pip install sliceval[mlflow]`. Raises `ImportError` with install instructions if missing.
 
-```
-artifacts/
-  slice_eval/
-    slice_report.csv        ← full slice × metric DataFrame
-    worst_slices.csv        ← top 10 worst slices
-    global_metrics.json     ← {"f1": 0.91, "precision": 0.89, ...}
-    slice_summary.json      ← {"n_slices": 14, "n_manual": 2, ...}
-```
-
-### Options
-
-```python
-report.to_mlflow(
-    run_id='abc123',              # explicit run ID (default: active run)
-    artifact_path='my_eval',      # artifact subdirectory (default: 'slice_eval')
-)
-```
-
-Requires `pip install sliceval[mlflow]`. Raises `ImportError` with install instructions if missing.
+<br>
 
 ---
 
-## Plotting
+<br>
 
-```python
-fig = report.plot(metric='f1', top_n=10, figsize=(10, 6))
-fig.savefig('slice_eval.png')
-```
+## 🏗️ Performance & Design
 
-Produces a horizontal bar chart:
+Built for production ML pipelines, not notebooks-only.
 
-- **Red bars**: delta < -0.1 (significantly worse than global)
-- **Amber bars**: -0.1 ≤ delta < 0 (somewhat worse)
-- **Green bars**: delta ≥ 0 (at or above global)
-- **Dashed line**: global metric baseline
-- **Error bars**: 95% confidence intervals
+<br>
 
-Requires `pip install sliceval[plot]`. Raises `ImportError` with install instructions if missing.
+<img src="docs/images/single_pass.svg" alt="single inference pass" width="100%">
 
----
+<br>
 
-## Regression Tasks
+| Property | Detail |
+|---|---|
+| **Single inference pass** | `model.predict()` called once. 100 slices = same cost as 1. |
+| **Lazy evaluation** | Callable masks evaluated at `.evaluate()` time, not at definition. |
+| **Non-invasive** | Wraps any sklearn-compatible model. No training code changes. |
+| **Composable** | Use slicing without discovery. Use discovery without MLflow. Each piece works alone. |
+| **Zero heavy deps** | Core = numpy + pandas + sklearn. MLflow, matplotlib, scipy are optional. |
+| **Tested** | 162 tests including stress tests across 7 datasets, 13 model types, 3 task types. |
 
-Everything works the same — just set `task='regression'`:
-
-```python
-ev = SliceEvaluator(
-    model, X_test, y_test,
-    task='regression',
-    metrics=['rmse', 'mae'],
-)
-
-ev.add_slice('region_west', X_test['region'] == 'west')
-ev.discover_slices(method='tree', metric='rmse', max_depth=2)
-
-report = ev.evaluate()
-print(report.worst_slices(metric='rmse'))
-```
-
-Discovery uses absolute error per sample as the error signal for regression.
+<br>
 
 ---
 
-## Full API Reference
+<br>
 
-### SliceEvaluator
+## 🧰 Compared to Other Tools
+
+<br>
+
+<img src="docs/images/comparison.svg" alt="tool comparison" width="100%">
+
+<br>
+
+---
+
+<br>
+
+## ⚠️ Common Mistakes
+
+**1. Using discovery without manual slices.** Discovery is automated, not omniscient. Always add slices for known risk segments first. Discovery finds what you missed.
+
+**2. Ignoring p-values.** A slice with delta = -0.30 and p = 0.45 is noise. A slice with delta = -0.10 and p = 0.002 is real. Filter by significance.
+
+**3. Setting `min_support` too low.** A slice with 8 samples and F1 = 0.0 is not actionable. Keep `min_support >= 0.05` unless you have a specific reason.
+
+**4. Evaluating on training data.** `sliceval` is for test/validation sets. Slice metrics on training data tell you about memorization, not generalization.
+
+<br>
+
+---
+
+<br>
+
+## 🛡️ Error Handling
+
+sliceval fails loudly with descriptive messages. No silent corruption.
+
+<details>
+<summary><strong>Exceptions (click to expand)</strong></summary>
+
+| Situation | Exception | Message |
+|---|---|---|
+| `X` is not a DataFrame | `TypeError` | `X must be a pd.DataFrame, got ndarray` |
+| `len(X) != len(y)` | `ValueError` | `X and y must have the same length. Got X: 500, y: 400` |
+| Invalid task string | `ValueError` | `task must be 'binary', 'multiclass', or 'regression'. Got: 'classify'` |
+| Unknown metric | `ValueError` | `Unknown metric 'f2'. Valid metrics: [...]` |
+| `auc`/`ece` without `predict_proba` | `ValueError` | `Metric 'auc' requires model.predict_proba()` |
+| Slice mask wrong length | `ValueError` | `Slice 'x' mask has length 50, expected 1000` |
+| Empty slice | `ValueError` | `Slice 'x' has 0 samples. Check your mask condition.` |
+| Discovery metric not in list | `ValueError` | `Discovery metric 'auc' is not in the evaluator's metric list` |
+| MLflow not installed | `ImportError` | `MLflow integration requires: pip install sliceval[mlflow]` |
+| matplotlib not installed | `ImportError` | `Plotting requires: pip install sliceval[plot]` |
+
+</details>
+
+<details>
+<summary><strong>Warnings (click to expand)</strong></summary>
+
+| Situation | Warning |
+|---|---|
+| Slice with < 30 samples | `Slice 'x' has 15 samples. Metrics may be unreliable.` |
+| Duplicate slice name | `Slice 'x' already exists and will be overwritten.` |
+| No slices before evaluate | `No slices defined. Call add_slice() or discover_slices().` |
+
+</details>
+
+<br>
+
+---
+
+<br>
+
+## 📖 Full API Reference
+
+<details>
+<summary><strong>SliceEvaluator (click to expand)</strong></summary>
 
 ```python
 SliceEvaluator(
@@ -350,12 +384,12 @@ SliceEvaluator(
     ci_method: str = 'bootstrap',   # 'bootstrap' | 'wilson'
     ci_alpha: float = 0.05,         # confidence level = 1 - ci_alpha
     n_bootstrap: int = 1000,        # bootstrap iterations
-    average: str = 'macro',         # multiclass averaging strategy
+    average: str = 'macro',         # multiclass averaging
     random_state: int = 42,
 )
 ```
 
-#### `add_slice(name, mask)`
+**`add_slice(name, mask)`**
 
 ```python
 ev.add_slice(
@@ -364,9 +398,9 @@ ev.add_slice(
 )
 ```
 
-If `mask` is a callable, it receives `X` and must return a boolean Series/array. Evaluated lazily at `.evaluate()` time.
+If `mask` is callable, it receives `X` and must return a boolean array. Evaluated lazily at `.evaluate()` time.
 
-#### `discover_slices(method, **kwargs)`
+**`discover_slices(method, **kwargs)`**
 
 ```python
 ev.discover_slices(
@@ -379,64 +413,54 @@ ev.discover_slices(
 )
 ```
 
-Must be called **before** `.evaluate()`. Calling multiple times appends.
-
-#### `evaluate() → SliceReport`
+**`evaluate() -> SliceReport`**
 
 Runs inference once, computes all metrics on all slices, returns a `SliceReport`.
 
----
+</details>
 
-### SliceReport
-
-Returned by `ev.evaluate()`.
+<details>
+<summary><strong>SliceReport (click to expand)</strong></summary>
 
 | Attribute | Type | Description |
 |---|---|---|
 | `global_metrics` | `dict` | `{'f1': 0.91, ...}` |
 | `slices` | `list[Slice]` | All evaluated slices |
-| `metrics` | `list[SliceMetrics]` | Per-slice results (same order as `slices`) |
+| `metrics` | `list[SliceMetrics]` | Per-slice results |
 | `task` | `str` | Task type |
 | `evaluated_at` | `datetime` | UTC timestamp |
 
-#### `worst_slices(n=5, metric=None, min_support=0.0) → pd.DataFrame`
+**`worst_slices(n=5, metric=None, min_support=0.0) -> pd.DataFrame`**
 
-Returns `n` worst slices sorted by `delta` ascending (most negative first). Filterable by minimum support.
+Returns `n` worst slices sorted by `delta` ascending.
 
-#### `to_dataframe() → pd.DataFrame`
+**`to_dataframe() -> pd.DataFrame`**
 
-Full slice × metric matrix. First row is always `[global]`. Columns per metric: `{m}_value`, `{m}_ci_lower`, `{m}_ci_upper`, `{m}_delta`, `{m}_p_value`.
+Full slice x metric matrix. First row is `[global]`. Columns per metric: `{m}_value`, `{m}_ci_lower`, `{m}_ci_upper`, `{m}_delta`, `{m}_p_value`.
 
-#### `to_mlflow(run_id=None, artifact_path='slice_eval')`
+**`to_mlflow(run_id=None, artifact_path='slice_eval')`**
 
-Logs CSV and JSON artifacts to MLflow. Uses active run if `run_id` is None.
+Logs CSV and JSON artifacts to MLflow.
 
-#### `plot(metric=None, top_n=10, figsize=(10, 6)) → Figure`
+**`plot(metric=None, top_n=10, figsize=(10, 6)) -> Figure`**
 
 Horizontal bar chart with CI error bars and global baseline.
 
----
+</details>
 
-### Slice
-
-Dataclass. Accessible via `report.slices`.
+<details>
+<summary><strong>Slice and SliceMetrics dataclasses (click to expand)</strong></summary>
 
 ```python
 @dataclass
 class Slice:
     name: str                       # human-readable label
     mask: np.ndarray                # boolean, shape (n_test_samples,)
-    n_samples: int                  # count of True entries
+    n_samples: int
     support: float                  # n_samples / len(X_test)
     source: str                     # 'manual' | 'tree' | 'beam'
     feature_conditions: list        # e.g. ['sensor_type == B', 'hour < 6']
-```
 
-### SliceMetrics
-
-Dataclass. Accessible via `report.metrics`.
-
-```python
 @dataclass
 class SliceMetrics:
     slice_name: str
@@ -445,40 +469,33 @@ class SliceMetrics:
     metrics: dict                   # {'f1': 0.41, ...}
     ci_lower: dict                  # {'f1': 0.33, ...}
     ci_upper: dict                  # {'f1': 0.49, ...}
-    delta: dict                     # {'f1': -0.50, ...} (slice - global)
+    delta: dict                     # {'f1': -0.50, ...}  (slice - global)
     p_value: dict                   # {'f1': 0.003, ...}
 ```
 
----
+</details>
 
-## Error Handling
-
-`sliceval` fails loudly with descriptive messages. No silent corruption.
-
-| Situation | Exception | What You See |
-|---|---|---|
-| `X` is not a DataFrame | `TypeError` | `X must be a pd.DataFrame, got ndarray` |
-| `len(X) != len(y)` | `ValueError` | `X and y must have the same length. Got X: 500, y: 400` |
-| Invalid task string | `ValueError` | `task must be 'binary', 'multiclass', or 'regression'. Got: 'classify'` |
-| Unknown metric name | `ValueError` | `Unknown metric 'f2'. Valid metrics: [...]` |
-| `auc`/`ece` without `predict_proba` | `ValueError` | `Metric 'auc' requires model.predict_proba()` |
-| Slice mask wrong length | `ValueError` | `Slice 'my_slice' mask has length 50, expected 1000` |
-| Empty slice | `ValueError` | `Slice 'my_slice' has 0 samples. Check your mask condition.` |
-| Discovery metric not in evaluator | `ValueError` | `Discovery metric 'auc' is not in the evaluator's metric list` |
-| MLflow not installed | `ImportError` | `MLflow integration requires: pip install sliceval[mlflow]` |
-| matplotlib not installed | `ImportError` | `Plotting requires: pip install sliceval[plot]` |
-
-### Warnings (non-fatal)
-
-| Situation | Warning |
-|---|---|
-| Slice with < 30 samples | `Slice 'x' has 15 samples. Metrics may be unreliable.` |
-| Duplicate slice name | `Slice 'x' already exists and will be overwritten.` |
-| No slices defined before evaluate | `No slices defined. Call add_slice() or discover_slices() before evaluate().` |
+<br>
 
 ---
 
-## Development
+<br>
+
+## 🗺️ Roadmap
+
+- [ ] Multi-model comparison (compare slices across model versions)
+- [ ] HTML report export (standalone, no MLflow needed)
+- [ ] Weights and Biases integration
+- [ ] Slice-aware cross-validation
+- [ ] Interactive slice explorer (panel/streamlit widget)
+
+<br>
+
+---
+
+<br>
+
+## 🧑‍💻 Development
 
 ```bash
 git clone https://github.com/kartikeyamandhar/sliceval.git
@@ -494,42 +511,37 @@ pytest tests/ -v
 
 ```
 sliceval/
-├── __init__.py                 # public API re-exports
-├── evaluator.py                # SliceEvaluator (main entry point)
-├── slice.py                    # Slice, SliceMetrics dataclasses
-├── metrics.py                  # metric computation + confidence intervals
-├── report.py                   # SliceReport output container
+├── __init__.py                 # public API
+├── evaluator.py                # SliceEvaluator
+├── slice.py                    # Slice, SliceMetrics
+├── metrics.py                  # metric computation + CI
+├── report.py                   # SliceReport
 ├── discovery/
-│   ├── tree.py                 # decision tree-based discovery
-│   └── beam.py                 # beam search discovery (SliceFinder)
+│   ├── tree.py                 # decision tree discovery
+│   └── beam.py                 # beam search (SliceFinder)
 ├── integrations/
 │   └── mlflow.py               # MLflow artifact export
 └── utils/
-    ├── stats.py                # bootstrap CI, Wilson CI, permutation tests
-    └── validation.py           # input validation, error messages
-
-tests/
-├── conftest.py                 # shared fixtures
-├── test_evaluator.py           # evaluator construction + evaluate flow
-├── test_metrics.py             # metric computation, CI, p-values
-├── test_discovery_tree.py      # tree discovery
-├── test_discovery_beam.py      # beam search discovery
-├── test_report.py              # report output format
-├── test_integration_mlflow.py  # MLflow logging (mocked)
-├── test_validation.py          # all ValueError/TypeError cases
-└── test_warnings.py            # all UserWarning cases
+    ├── stats.py                # bootstrap, Wilson, permutation tests
+    └── validation.py           # input validation
 ```
 
-### Design Principles
-
-- **Non-invasive**: wraps any sklearn-compatible model, no training code changes
-- **Composable**: each component usable independently
-- **Statistically honest**: every metric has CI, sample size, and significance test
-- **Lazy evaluation**: `model.predict()` called once, all slices reuse cached predictions
-- **Zero mandatory dependencies beyond sklearn**: `mlflow`, `scipy`, `matplotlib` are optional
+<br>
 
 ---
 
-## License
+<br>
 
-MIT
+<div align="center">
+
+### Built because global metrics are dangerous defaults.
+
+**If this saves you from a production failure, consider starring the repo.**
+
+⭐ [github.com/kartikeyamandhar/sliceval](https://github.com/kartikeyamandhar/sliceval)
+
+<br>
+
+MIT License · Made by [Kartikeya Mandhar](https://github.com/kartikeyamandhar)
+
+</div>

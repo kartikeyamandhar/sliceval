@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 280" font-family="monospace" font-size="12">
+  <style>
+    .bg { fill: #0d1117; }
+    .node { fill: #1a1a2e; stroke: #00d4ff; stroke-width: 2; rx: 6; }
+    .node-bad { fill: #1a1a2e; stroke: #ff6b6b; stroke-width: 2; rx: 6; }
+    .node-ok { fill: #1a1a2e; stroke: #51cf66; stroke-width: 2; rx: 6; }
+    .t { fill: #e0e0e0; text-anchor: middle; dominant-baseline: central; font-size: 11; }
+    .ts { fill: #888; text-anchor: middle; dominant-baseline: central; font-size: 10; }
+    .edge { stroke: #555; stroke-width: 2; fill: none; }
+    @keyframes appear1 { 0%,15% { opacity: 0; } 25%,100% { opacity: 1; } }
+    @keyframes appear2 { 0%,35% { opacity: 0; } 45%,100% { opacity: 1; } }
+    @keyframes appear3 { 0%,55% { opacity: 0; } 65%,100% { opacity: 1; } }
+    @keyframes glow { 0%,100% { stroke-width: 2; } 50% { stroke-width: 4; } }
+  </style>
+
+  <rect class="bg" width="700" height="280" rx="12"/>
+  <text class="t" x="350" y="20" font-size="13" font-weight="bold" fill="#00d4ff">Tree Discovery: Finding where errors concentrate</text>
+
+  <!-- Root -->
+  <rect class="node" x="275" y="40" width="150" height="40"/>
+  <text class="t" x="350" y="55">All errors</text>
+  <text class="ts" x="350" y="70">n=1000, err=9%</text>
+
+  <!-- Level 1 edges -->
+  <g style="animation: appear1 6s ease-out infinite;">
+    <line class="edge" x1="310" y1="80" x2="180" y2="120"/>
+    <line class="edge" x1="390" y1="80" x2="520" y2="120"/>
+
+    <!-- Left child -->
+    <rect class="node-ok" x="100" y="120" width="160" height="40"/>
+    <text class="t" x="180" y="135">sensor_type = A</text>
+    <text class="ts" x="180" y="150">n=850, err=3%</text>
+
+    <!-- Right child -->
+    <rect class="node-bad" x="440" y="120" width="160" height="40"/>
+    <text class="t" x="520" y="135">sensor_type = B</text>
+    <text class="ts" x="520" y="150" fill="#ff6b6b">n=150, err=42%</text>
+  </g>
+
+  <!-- Level 2 edges from right -->
+  <g style="animation: appear2 6s ease-out infinite;">
+    <line class="edge" x1="490" y1="160" x2="400" y2="200"/>
+    <line class="edge" x1="550" y1="160" x2="620" y2="200"/>
+
+    <!-- Right-Left -->
+    <rect class="node" x="320" y="200" width="160" height="40"/>
+    <text class="t" x="400" y="215">hour > 6</text>
+    <text class="ts" x="400" y="230">n=100, err=22%</text>
+
+    <!-- Right-Right: the worst slice -->
+    <rect class="node-bad" x="545" y="200" width="150" height="40" style="animation: glow 2s ease-in-out 4s infinite;"/>
+    <text class="t" x="620" y="215" fill="#ff6b6b">hour ≤ 6</text>
+    <text class="ts" x="620" y="230" fill="#ff6b6b">n=50, err=68%</text>
+  </g>
+
+  <!-- Result label -->
+  <g style="animation: appear3 6s ease-out infinite;">
+    <rect x="440" y="250" width="255" height="22" fill="#ff6b6b" rx="4" opacity="0.15"/>
+    <text class="ts" x="567" y="262" fill="#ff6b6b" font-size="11">→ sensor_type=B AND hour≤6 (auto)</text>
+  </g>
+</svg>

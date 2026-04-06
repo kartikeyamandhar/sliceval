@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 200" font-family="monospace" font-size="13">
+  <style>
+    .box { fill: #1a1a2e; stroke: #00d4ff; stroke-width: 2; rx: 8; }
+    .box-warn { fill: #1a1a2e; stroke: #ff6b6b; stroke-width: 2; rx: 8; }
+    .box-green { fill: #1a1a2e; stroke: #51cf66; stroke-width: 2; rx: 8; }
+    .label { fill: #e0e0e0; text-anchor: middle; dominant-baseline: central; }
+    .sublabel { fill: #888; text-anchor: middle; dominant-baseline: central; font-size: 10; }
+    .arrow { stroke: #555; stroke-width: 2; fill: none; marker-end: url(#arrowhead); }
+    .dot { fill: #00d4ff; }
+    @keyframes flow1 { 0%,100% { cx: 155; opacity: 0; } 10% { opacity: 1; } 40% { cx: 250; opacity: 1; } 50% { opacity: 0; } }
+    @keyframes flow2 { 0%,40% { cx: 370; opacity: 0; } 50% { opacity: 1; } 80% { cx: 460; opacity: 1; } 90% { opacity: 0; } 100% { opacity: 0; } }
+    @keyframes flow3 { 0%,70% { cx: 580; opacity: 0; } 80% { opacity: 1; } 95% { cx: 640; opacity: 1; } 100% { opacity: 0; } }
+    @keyframes pulse { 0%,100% { opacity: 0.6; } 50% { opacity: 1; } }
+  </style>
+  <defs>
+    <marker id="arrowhead" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#555"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="800" height="200" fill="#0d1117" rx="12"/>
+
+  <!-- Box 1: Model + Data -->
+  <rect class="box" x="30" y="60" width="130" height="80"/>
+  <text class="label" x="95" y="90">Model</text>
+  <text class="sublabel" x="95" y="110">+ X_test, y_test</text>
+
+  <!-- Arrow 1 -->
+  <line class="arrow" x1="160" y1="100" x2="250" y2="100"/>
+  <circle class="dot" r="4" cy="100" style="animation: flow1 3s ease-in-out infinite;">
+    <animate attributeName="cx" values="160;250" dur="3s" repeatCount="indefinite"/>
+  </circle>
+
+  <!-- Box 2: SliceEvaluator -->
+  <rect class="box" x="255" y="45" width="160" height="110"/>
+  <text class="label" x="335" y="75">SliceEvaluator</text>
+  <text class="sublabel" x="335" y="95">predict() → cached</text>
+  <text class="sublabel" x="335" y="112">manual slices</text>
+  <text class="sublabel" x="335" y="129">auto discovery</text>
+  <rect x="260" y="45" width="150" height="4" fill="#00d4ff" rx="2" style="animation: pulse 2s ease-in-out infinite;"/>
+
+  <!-- Arrow 2 -->
+  <line class="arrow" x1="415" y1="100" x2="500" y2="100"/>
+  <circle class="dot" r="4" cy="100" style="animation: flow2 3s ease-in-out infinite;">
+    <animate attributeName="cx" values="415;500" dur="3s" begin="1s" repeatCount="indefinite"/>
+  </circle>
+
+  <!-- Box 3: Metrics -->
+  <rect class="box-warn" x="505" y="55" width="120" height="90"/>
+  <text class="label" x="565" y="82">Metrics</text>
+  <text class="sublabel" x="565" y="100">F1, CI, p-value</text>
+  <text class="sublabel" x="565" y="117">per slice</text>
+
+  <!-- Arrow 3 -->
+  <line class="arrow" x1="625" y1="100" x2="680" y2="100"/>
+
+  <!-- Box 4: Report -->
+  <rect class="box-green" x="685" y="55" width="100" height="90"/>
+  <text class="label" x="735" y="82">Report</text>
+  <text class="sublabel" x="735" y="100">worst_slices()</text>
+  <text class="sublabel" x="735" y="117">to_mlflow()</text>
+</svg>

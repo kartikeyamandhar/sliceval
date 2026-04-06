@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 200" font-family="monospace" font-size="11">
+  <style>
+    .bg { fill: #0d1117; }
+    .box { fill: #1a1a2e; stroke-width: 2; rx: 6; }
+    .t { fill: #e0e0e0; text-anchor: middle; dominant-baseline: central; }
+    .ts { fill: #888; text-anchor: middle; dominant-baseline: central; font-size: 10; }
+    .cache { fill: #0d4429; stroke: #51cf66; stroke-width: 2; rx: 6; }
+    .slice-box { fill: #161b22; stroke: #555; stroke-width: 1; rx: 4; }
+    @keyframes predict { 0%,100% { opacity: 0.5; } 15%,25% { opacity: 1; fill: #00d4ff; } 30%,100% { opacity: 0.5; } }
+    @keyframes fanOut { 0%,30% { opacity: 0; } 40%,100% { opacity: 1; } }
+    @keyframes check1 { 0%,45% { opacity: 0; } 55%,100% { opacity: 1; } }
+    @keyframes check2 { 0%,55% { opacity: 0; } 65%,100% { opacity: 1; } }
+    @keyframes check3 { 0%,65% { opacity: 0; } 75%,100% { opacity: 1; } }
+    @keyframes check4 { 0%,70% { opacity: 0; } 80%,100% { opacity: 1; } }
+    @keyframes check5 { 0%,75% { opacity: 0; } 85%,100% { opacity: 1; } }
+  </style>
+
+  <rect class="bg" width="700" height="200" rx="12"/>
+  <text class="t" x="350" y="18" font-size="13" font-weight="bold" fill="#00d4ff">Single inference pass — 100 slices = same cost as 1</text>
+
+  <!-- Model -->
+  <rect class="box" x="20" y="55" width="120" height="55" stroke="#555" style="animation: predict 6s ease-in-out infinite;"/>
+  <text class="t" x="80" y="75">model</text>
+  <text class="ts" x="80" y="93">.predict()</text>
+
+  <!-- Arrow to cache -->
+  <line x1="140" y1="82" x2="190" y2="82" stroke="#555" stroke-width="2" marker-end="url(#ah3)"/>
+  <text class="ts" x="165" y="72" fill="#51cf66">once</text>
+
+  <!-- Cache -->
+  <rect class="cache" x="195" y="55" width="130" height="55"/>
+  <text class="t" x="260" y="75" fill="#51cf66">Cached</text>
+  <text class="ts" x="260" y="93" fill="#51cf66">y_pred, y_prob</text>
+
+  <!-- Fan out arrows -->
+  <g style="animation: fanOut 6s ease-out infinite;">
+    <line x1="325" y1="65" x2="400" y2="45" stroke="#333" stroke-width="1"/>
+    <line x1="325" y1="75" x2="400" y2="75" stroke="#333" stroke-width="1"/>
+    <line x1="325" y1="85" x2="400" y2="105" stroke="#333" stroke-width="1"/>
+    <line x1="325" y1="90" x2="400" y2="135" stroke="#333" stroke-width="1"/>
+    <line x1="325" y1="95" x2="400" y2="165" stroke="#333" stroke-width="1"/>
+  </g>
+
+  <!-- Slice boxes -->
+  <g style="animation: check1 6s ease-out infinite;">
+    <rect class="slice-box" x="405" y="33" width="280" height="22"/>
+    <text class="ts" x="545" y="46">Slice 1: sensor_b — mask applied ✓</text>
+  </g>
+  <g style="animation: check2 6s ease-out infinite;">
+    <rect class="slice-box" x="405" y="63" width="280" height="22"/>
+    <text class="ts" x="545" y="76">Slice 2: night_shift — mask applied ✓</text>
+  </g>
+  <g style="animation: check3 6s ease-out infinite;">
+    <rect class="slice-box" x="405" y="93" width="280" height="22"/>
+    <text class="ts" x="545" y="106">Slice 3: hour≤5 (auto) — mask applied ✓</text>
+  </g>
+  <g style="animation: check4 6s ease-out infinite;">
+    <rect class="slice-box" x="405" y="123" width="280" height="22"/>
+    <text class="ts" x="545" y="136">Slice 4: temp>80 (auto) — mask applied ✓</text>
+  </g>
+  <g style="animation: check5 6s ease-out infinite;">
+    <rect class="slice-box" x="405" y="153" width="280" height="22"/>
+    <text class="ts" x="545" y="166">... Slice N — mask applied ✓</text>
+  </g>
+
+  <defs>
+    <marker id="ah3" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#555"/>
+    </marker>
+  </defs>
+</svg>

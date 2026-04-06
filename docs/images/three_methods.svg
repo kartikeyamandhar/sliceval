@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 180" font-family="monospace" font-size="12">
+  <style>
+    .bg { fill: #0d1117; }
+    .box { fill: #1a1a2e; rx: 8; stroke-width: 2; }
+    .t { fill: #e0e0e0; text-anchor: middle; dominant-baseline: central; }
+    .ts { fill: #888; text-anchor: middle; dominant-baseline: central; font-size: 10; }
+    .code { fill: #c9d1d9; font-size: 10; }
+    @keyframes slideIn1 { 0%,5% { transform: translateX(-20px); opacity: 0; } 20%,100% { transform: translateX(0); opacity: 1; } }
+    @keyframes slideIn2 { 0%,25% { transform: translateX(-20px); opacity: 0; } 40%,100% { transform: translateX(0); opacity: 1; } }
+    @keyframes slideIn3 { 0%,45% { transform: translateX(-20px); opacity: 0; } 60%,100% { transform: translateX(0); opacity: 1; } }
+  </style>
+
+  <rect class="bg" width="700" height="180" rx="12"/>
+
+  <!-- Manual -->
+  <g style="animation: slideIn1 5s ease-out infinite;">
+    <rect class="box" x="20" y="15" width="200" height="150" stroke="#00d4ff"/>
+    <text class="t" x="120" y="35" fill="#00d4ff" font-weight="bold">Manual</text>
+    <text class="ts" x="120" y="55">You define them</text>
+    <text class="code" x="35" y="80">add_slice('night',</text>
+    <text class="code" x="35" y="95">  X['hour'] &lt; 6)</text>
+    <text class="ts" x="120" y="125">✓ Domain knowledge</text>
+    <text class="ts" x="120" y="142">✓ Known risk groups</text>
+  </g>
+
+  <!-- Tree -->
+  <g style="animation: slideIn2 5s ease-out infinite;">
+    <rect class="box" x="250" y="15" width="200" height="150" stroke="#ffa94d"/>
+    <text class="t" x="350" y="35" fill="#ffa94d" font-weight="bold">Tree Discovery</text>
+    <text class="ts" x="350" y="55">Decision tree on errors</text>
+    <text class="code" x="265" y="80">discover_slices(</text>
+    <text class="code" x="265" y="95">  method='tree')</text>
+    <text class="ts" x="350" y="125">✓ Fast</text>
+    <text class="ts" x="350" y="142">✓ Axis-aligned splits</text>
+  </g>
+
+  <!-- Beam -->
+  <g style="animation: slideIn3 5s ease-out infinite;">
+    <rect class="box" x="480" y="15" width="200" height="150" stroke="#ff6b6b"/>
+    <text class="t" x="580" y="35" fill="#ff6b6b" font-weight="bold">Beam Search</text>
+    <text class="ts" x="580" y="55">Exhaustive enumeration</text>
+    <text class="code" x="495" y="80">discover_slices(</text>
+    <text class="code" x="495" y="95">  method='beam')</text>
+    <text class="ts" x="580" y="125">✓ Thorough</text>
+    <text class="ts" x="580" y="142">✓ Complex interactions</text>
+  </g>
+</svg>

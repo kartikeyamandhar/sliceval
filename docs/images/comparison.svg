@@ -1,0 +1,83 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 220" font-family="monospace" font-size="11">
+  <style>
+    .bg { fill: #0d1117; }
+    .hdr { fill: #161b22; }
+    .row-even { fill: #0d1117; }
+    .row-odd { fill: #111820; }
+    .th { fill: #00d4ff; font-weight: bold; font-size: 11; text-anchor: middle; dominant-baseline: central; }
+    .td { fill: #c9d1d9; font-size: 11; text-anchor: middle; dominant-baseline: central; }
+    .yes { fill: #51cf66; font-size: 13; text-anchor: middle; dominant-baseline: central; }
+    .no { fill: #666; font-size: 13; text-anchor: middle; dominant-baseline: central; }
+    .feat { fill: #c9d1d9; font-size: 11; dominant-baseline: central; }
+    @keyframes highlightCol { 0%,100% { opacity: 0; } 40%,60% { opacity: 0.08; } }
+  </style>
+
+  <rect class="bg" width="720" height="220" rx="12"/>
+
+  <!-- Highlight sliceval column -->
+  <rect x="230" y="12" width="100" height="205" fill="#00d4ff" rx="4" style="animation: highlightCol 4s ease-in-out infinite;"/>
+
+  <!-- Header row -->
+  <rect class="hdr" x="5" y="12" width="710" height="24" rx="4"/>
+  <text class="th" x="110" y="26">Feature</text>
+  <text class="th" x="280" y="26" fill="#00d4ff">sliceval</text>
+  <text class="th" x="390" y="26">Fairlearn</text>
+  <text class="th" x="500" y="26">Evidently</text>
+  <text class="th" x="625" y="26">Manual groupby</text>
+
+  <!-- Row 1 -->
+  <rect class="row-odd" x="5" y="38" width="710" height="24"/>
+  <text class="feat" x="15" y="52">Auto discovery</text>
+  <text class="yes" x="280" y="52">✓</text>
+  <text class="no" x="390" y="52">✗</text>
+  <text class="no" x="500" y="52">✗</text>
+  <text class="no" x="625" y="52">✗</text>
+
+  <!-- Row 2 -->
+  <rect class="row-even" x="5" y="62" width="710" height="24"/>
+  <text class="feat" x="15" y="76">Confidence intervals</text>
+  <text class="yes" x="280" y="76">✓</text>
+  <text class="no" x="390" y="76">✗</text>
+  <text class="no" x="500" y="76">✗</text>
+  <text class="no" x="625" y="76">✗</text>
+
+  <!-- Row 3 -->
+  <rect class="row-odd" x="5" y="86" width="710" height="24"/>
+  <text class="feat" x="15" y="100">Significance testing</text>
+  <text class="yes" x="280" y="100">✓</text>
+  <text class="no" x="390" y="100">✗</text>
+  <text class="no" x="500" y="100">✗</text>
+  <text class="no" x="625" y="100">✗</text>
+
+  <!-- Row 4 -->
+  <rect class="row-even" x="5" y="110" width="710" height="24"/>
+  <text class="feat" x="15" y="124">MLflow integration</text>
+  <text class="yes" x="280" y="124">✓</text>
+  <text class="no" x="390" y="124">✗</text>
+  <text class="no" x="500" y="124">✗</text>
+  <text class="no" x="625" y="124">✗</text>
+
+  <!-- Row 5 -->
+  <rect class="row-odd" x="5" y="134" width="710" height="24"/>
+  <text class="feat" x="15" y="148">sklearn compatible</text>
+  <text class="yes" x="280" y="148">✓</text>
+  <text class="yes" x="390" y="148">✓</text>
+  <text class="td" x="500" y="148">partial</text>
+  <text class="yes" x="625" y="148">✓</text>
+
+  <!-- Row 6 -->
+  <rect class="row-even" x="5" y="158" width="710" height="24"/>
+  <text class="feat" x="15" y="172">No heavy deps</text>
+  <text class="yes" x="280" y="172">✓</text>
+  <text class="no" x="390" y="172">✗</text>
+  <text class="no" x="500" y="172">✗</text>
+  <text class="yes" x="625" y="172">✓</text>
+
+  <!-- Row 7 -->
+  <rect class="row-odd" x="5" y="182" width="710" height="24"/>
+  <text class="feat" x="15" y="196">pip install</text>
+  <text class="yes" x="280" y="196">✓</text>
+  <text class="yes" x="390" y="196">✓</text>
+  <text class="yes" x="500" y="196">✓</text>
+  <text class="no" x="625" y="196">N/A</text>
+</svg>

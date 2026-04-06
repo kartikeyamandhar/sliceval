@@ -1,0 +1,110 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 780 210" font-family="monospace" font-size="11">
+  <style>
+    .bg { fill: #0d1117; }
+    .hdr { fill: #161b22; }
+    .row-even { fill: #0d1117; }
+    .row-odd { fill: #111820; }
+    .th { fill: #00d4ff; font-weight: bold; font-size: 11; }
+    .td { fill: #c9d1d9; font-size: 11; }
+    .td-bad { fill: #ff6b6b; font-size: 11; }
+    .td-warn { fill: #ffa94d; font-size: 11; }
+    .td-ok { fill: #51cf66; font-size: 11; }
+    .td-dim { fill: #666; font-size: 11; }
+    @keyframes typeRow1 { 0%,15% { opacity: 0; } 25%,100% { opacity: 1; } }
+    @keyframes typeRow2 { 0%,30% { opacity: 0; } 40%,100% { opacity: 1; } }
+    @keyframes typeRow3 { 0%,45% { opacity: 0; } 55%,100% { opacity: 1; } }
+    @keyframes typeRow4 { 0%,55% { opacity: 0; } 65%,100% { opacity: 1; } }
+    @keyframes typeRow5 { 0%,65% { opacity: 0; } 75%,100% { opacity: 1; } }
+  </style>
+
+  <rect class="bg" width="780" height="210" rx="8"/>
+
+  <!-- Terminal bar -->
+  <rect x="0" y="0" width="780" height="24" fill="#1a1a2e" rx="8"/>
+  <circle cx="14" cy="12" r="5" fill="#ff5f57"/>
+  <circle cx="30" cy="12" r="5" fill="#ffbd2e"/>
+  <circle cx="46" cy="12" r="5" fill="#28c840"/>
+  <text x="390" y="16" fill="#888" text-anchor="middle" font-size="10">report.worst_slices(n=5, metric='f1')</text>
+
+  <!-- Header -->
+  <rect class="hdr" x="5" y="30" width="770" height="22"/>
+  <text class="th" x="15" y="44">slice_name</text>
+  <text class="th" x="195" y="44">n_samples</text>
+  <text class="th" x="280" y="44">support</text>
+  <text class="th" x="355" y="44">f1</text>
+  <text class="th" x="420" y="44">ci_lower</text>
+  <text class="th" x="500" y="44">ci_upper</text>
+  <text class="th" x="580" y="44">delta</text>
+  <text class="th" x="650" y="44">p_value</text>
+  <text class="th" x="725" y="44">source</text>
+
+  <!-- Row 1 -->
+  <g style="animation: typeRow1 8s ease-out infinite;">
+    <rect class="row-odd" x="5" y="54" width="770" height="26"/>
+    <text class="td-bad" x="15" y="70">sensor_b_night</text>
+    <text class="td" x="215" y="70">200</text>
+    <text class="td-dim" x="285" y="70">0.02</text>
+    <text class="td-bad" x="350" y="70">0.41</text>
+    <text class="td-dim" x="420" y="70">0.33</text>
+    <text class="td-dim" x="500" y="70">0.49</text>
+    <text class="td-bad" x="575" y="70">-0.50</text>
+    <text class="td" x="645" y="70">0.003</text>
+    <text class="td-dim" x="720" y="70">manual</text>
+  </g>
+
+  <!-- Row 2 -->
+  <g style="animation: typeRow2 8s ease-out infinite;">
+    <rect class="row-even" x="5" y="80" width="770" height="26"/>
+    <text class="td-warn" x="15" y="96">hour&lt;=5 (auto)</text>
+    <text class="td" x="215" y="96">85</text>
+    <text class="td-dim" x="280" y="96">0.09</text>
+    <text class="td-warn" x="350" y="96">0.55</text>
+    <text class="td-dim" x="420" y="96">0.44</text>
+    <text class="td-dim" x="500" y="96">0.65</text>
+    <text class="td-warn" x="575" y="96">-0.36</text>
+    <text class="td" x="645" y="96">0.010</text>
+    <text class="td-dim" x="720" y="96">tree</text>
+  </g>
+
+  <!-- Row 3 -->
+  <g style="animation: typeRow3 8s ease-out infinite;">
+    <rect class="row-odd" x="5" y="106" width="770" height="26"/>
+    <text class="td-warn" x="15" y="122">sensor_b</text>
+    <text class="td" x="215" y="122">800</text>
+    <text class="td-dim" x="280" y="122">0.08</text>
+    <text class="td-warn" x="350" y="122">0.61</text>
+    <text class="td-dim" x="420" y="122">0.55</text>
+    <text class="td-dim" x="500" y="122">0.67</text>
+    <text class="td-warn" x="575" y="122">-0.30</text>
+    <text class="td" x="645" y="122">0.001</text>
+    <text class="td-dim" x="720" y="122">manual</text>
+  </g>
+
+  <!-- Row 4 -->
+  <g style="animation: typeRow4 8s ease-out infinite;">
+    <rect class="row-even" x="5" y="132" width="770" height="26"/>
+    <text class="td" x="15" y="148">temp&gt;80 (auto)</text>
+    <text class="td" x="215" y="148">310</text>
+    <text class="td-dim" x="280" y="148">0.03</text>
+    <text class="td" x="350" y="148">0.82</text>
+    <text class="td-dim" x="420" y="148">0.76</text>
+    <text class="td-dim" x="500" y="148">0.88</text>
+    <text class="td" x="575" y="148">-0.09</text>
+    <text class="td" x="645" y="148">0.042</text>
+    <text class="td-dim" x="720" y="148">tree</text>
+  </g>
+
+  <!-- Row 5 -->
+  <g style="animation: typeRow5 8s ease-out infinite;">
+    <rect class="row-odd" x="5" y="158" width="770" height="26"/>
+    <text class="td-ok" x="15" y="174">sensor_a</text>
+    <text class="td" x="210" y="174">8000</text>
+    <text class="td-dim" x="280" y="174">0.80</text>
+    <text class="td-ok" x="350" y="174">0.96</text>
+    <text class="td-dim" x="420" y="174">0.95</text>
+    <text class="td-dim" x="500" y="174">0.97</text>
+    <text class="td-ok" x="575" y="174">+0.05</text>
+    <text class="td" x="645" y="174">0.880</text>
+    <text class="td-dim" x="720" y="174">manual</text>
+  </g>
+</svg>

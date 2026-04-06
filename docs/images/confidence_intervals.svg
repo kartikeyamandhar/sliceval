@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 220" font-family="monospace" font-size="12">
+  <style>
+    .bg { fill: #0d1117; }
+    .t { fill: #e0e0e0; text-anchor: middle; dominant-baseline: central; }
+    .ts { fill: #888; dominant-baseline: central; font-size: 10; }
+    .tl { fill: #888; text-anchor: end; dominant-baseline: central; font-size: 11; }
+    .ci-line { stroke-width: 3; stroke-linecap: round; }
+    .dot { r: 5; }
+    @keyframes growCI1 { 0%,10% { x1: 400; x2: 400; } 30%,100% { x1: 315; x2: 485; } }
+    @keyframes growCI2 { 0%,20% { x1: 250; x2: 250; } 40%,100% { x1: 135; x2: 365; } }
+    @keyframes growCI3 { 0%,30% { x1: 170; x2: 170; } 50%,100% { x1: 60; x2: 280; } }
+    @keyframes popDot { 0%,25% { r: 0; } 35%,100% { r: 5; } }
+  </style>
+
+  <rect class="bg" width="700" height="220" rx="12"/>
+  <text class="t" x="350" y="20" font-size="13" font-weight="bold" fill="#00d4ff">Every metric has a confidence interval</text>
+
+  <!-- Axis -->
+  <line x1="50" y1="190" x2="650" y2="190" stroke="#333" stroke-width="1"/>
+  <text class="ts" x="45" y="205" text-anchor="start">0.0</text>
+  <text class="ts" x="345" y="205" text-anchor="middle">0.5</text>
+  <text class="ts" x="645" y="205" text-anchor="end">1.0</text>
+
+  <!-- Global baseline -->
+  <line x1="545" y1="40" x2="545" y2="185" stroke="#51cf66" stroke-width="1" stroke-dasharray="6" opacity="0.5"/>
+  <text class="ts" x="545" y="38" text-anchor="middle" fill="#51cf66">Global F1 = 0.91</text>
+
+  <!-- Slice 1: good -->
+  <text class="tl" x="42" y="75">Sensor A</text>
+  <line class="ci-line" y1="75" y2="75" stroke="#51cf66" opacity="0.4" style="animation: growCI1 4s ease-out infinite;">
+    <animate attributeName="x1" values="400;315" dur="4s" fill="freeze"/>
+    <animate attributeName="x2" values="400;485" dur="4s" fill="freeze"/>
+  </line>
+  <circle cy="75" fill="#51cf66" style="animation: popDot 4s ease-out infinite;">
+    <animate attributeName="cx" values="400;400" dur="4s" fill="freeze"/>
+    <animate attributeName="r" values="0;5" dur="4s" fill="freeze"/>
+  </circle>
+  <text class="ts" x="500" y="75" fill="#51cf66">0.96 [0.93, 0.98]</text>
+
+  <!-- Slice 2: warning -->
+  <text class="tl" x="42" y="120">Sensor B day</text>
+  <line class="ci-line" y1="120" y2="120" stroke="#ffa94d" opacity="0.4" style="animation: growCI2 4s ease-out 0.5s both infinite;">
+    <animate attributeName="x1" values="250;135" dur="4s" begin="0.5s" fill="freeze"/>
+    <animate attributeName="x2" values="250;365" dur="4s" begin="0.5s" fill="freeze"/>
+  </line>
+  <circle cx="250" cy="120" fill="#ffa94d" style="animation: popDot 4s ease-out 0.5s both infinite;">
+    <animate attributeName="r" values="0;5" dur="4s" begin="0.5s" fill="freeze"/>
+  </circle>
+  <text class="ts" x="380" y="120" fill="#ffa94d">0.61 [0.48, 0.74]</text>
+
+  <!-- Slice 3: bad -->
+  <text class="tl" x="42" y="165">Sensor B night</text>
+  <line class="ci-line" y1="165" y2="165" stroke="#ff6b6b" opacity="0.4" style="animation: growCI3 4s ease-out 1s both infinite;">
+    <animate attributeName="x1" values="170;60" dur="4s" begin="1s" fill="freeze"/>
+    <animate attributeName="x2" values="170;280" dur="4s" begin="1s" fill="freeze"/>
+  </line>
+  <circle cx="170" cy="165" fill="#ff6b6b" style="animation: popDot 4s ease-out 1s both infinite;">
+    <animate attributeName="r" values="0;5" dur="4s" begin="1s" fill="freeze"/>
+  </circle>
+  <text class="ts" x="295" y="165" fill="#ff6b6b">0.41 [0.28, 0.54]</text>
+</svg>
