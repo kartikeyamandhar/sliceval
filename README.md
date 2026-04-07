@@ -2,6 +2,8 @@
 
 <br>
 
+<img src="docs/images/header_image.png" alt="sliceval logo" width="200">
+
 # sliceval
 
 ### Your model's global metric is lying to you.
